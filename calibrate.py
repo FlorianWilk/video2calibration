@@ -7,25 +7,29 @@ from glob import glob
 import cv2
 import numpy as np
 import yaml
+from picamera.array import PiRGBArray
+from picamera import PiCamera
+import time
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Calibrate camera using a video of a chessboard or a sequence of images.')
-    parser.add_argument('input', help='input video file or glob mask')
     parser.add_argument('out', help='output calibration yaml file')
     parser.add_argument('--debug-dir', help='path to directory where images with detected chessboard will be written',
                         default=None)
     parser.add_argument('-c', '--corners', help='output corners file', default=None)
-    parser.add_argument('-fs', '--framestep', help='use every nth frame in the video', default=20, type=int)
+    parser.add_argument('-fs', '--framestep', help='use every nth frame in the video', default=1, type=int)
     parser.add_argument('-max', '--max-frames', help='limit the number of frames used for calibration', default=None, type=int)
     # parser.add_argument('--figure', help='saved visualization name', default=None)
     args = parser.parse_args()
 
-    if '*' in args.input:
-        source = glob(args.input)
-    else:
-        source = cv2.VideoCapture(args.input)
-    # square_size = float(args.get('--square_size', 1.0))
 
+    camera = PiCamera()
+    camera.resolution = (1296, 976)
+#    camera.resolution = (1648,1232 )
+    camera.framerate = 15
+    rawCapture = PiRGBArray(camera)
+    time.sleep(0.1)
+	  
     pattern_size = (9, 6)
     pattern_points = np.zeros((np.prod(pattern_size), 3), np.float32)
     pattern_points[:, :2] = np.indices(pattern_size).T.reshape(-1, 2)
@@ -36,23 +40,17 @@ if __name__ == '__main__':
     h, w = 0, 0
     frame = -1
     used_frames = 0
-    while True:
+    for sframe in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
+        img=sframe.array
+    #while True:
         frame += 1
-        if isinstance(source, list):
-            # glob
-            if frame == len(source):
-                break
-            img = cv2.imread(source[frame])
-        else:
-            # cv2.VideoCapture
-            retval, img = source.read()
-            if not retval:
-                break
-            if frame % args.framestep != 0:
-                continue
+        #if frame % args.framestep != 0:
+       # 	continue
 
         print(f'Searching for chessboard in frame {frame}... ', end='')
         img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        rawCapture.truncate(0)
+
         h, w = img.shape[:2]
         found, corners = cv2.findChessboardCorners(img, pattern_size, flags=cv2.CALIB_CB_FILTER_QUADS)
         if found:
@@ -72,7 +70,6 @@ if __name__ == '__main__':
             img_chess = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR)
             cv2.drawChessboardCorners(img_chess, pattern_size, corners, found)
             cv2.imwrite(os.path.join(args.debug_dir, '%04d.png' % frame), img_chess)
-
     if args.corners:
         with open(args.corners, 'wb') as fw:
             pickle.dump(img_points, fw)
