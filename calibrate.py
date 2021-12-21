@@ -25,8 +25,8 @@ if __name__ == '__main__':
 
     camera = PiCamera()
 #    camera.resolution = (1296, 976)
-    camera.resolution = (1648,1232 )
-#    camera.resolution = (2592,1944 )
+#    camera.resolution = (1648,1232 )
+    camera.resolution = (2592,1944 )
 #    camera.resolution = (1280,720)
 #    camera.resolution = (640,480)
     camera.framerate = 20
