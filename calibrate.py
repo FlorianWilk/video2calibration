@@ -11,9 +11,9 @@ from picamera.array import PiRGBArray
 from picamera import PiCamera
 import time
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Calibrate camera using a video of a chessboard or a sequence of images.')
-    parser.add_argument('out', help='output calibration yaml file')
     parser.add_argument('--debug-dir', help='path to directory where images with detected chessboard will be written',
                         default=None)
     parser.add_argument('-c', '--corners', help='output corners file', default=None)
@@ -24,9 +24,12 @@ if __name__ == '__main__':
 
 
     camera = PiCamera()
-    camera.resolution = (1296, 976)
-#    camera.resolution = (1648,1232 )
-    camera.framerate = 15
+#    camera.resolution = (1296, 976)
+    camera.resolution = (1648,1232 )
+#    camera.resolution = (2592,1944 )
+#    camera.resolution = (1280,720)
+#    camera.resolution = (640,480)
+    camera.framerate = 20
     rawCapture = PiRGBArray(camera)
     time.sleep(0.1)
 	  
@@ -98,6 +101,6 @@ if __name__ == '__main__':
     # print "camera matrix:\n", camera_matrix
     # print "distortion coefficients: ", dist_coefs.ravel()
 
-    calibration = {'rms': rms, 'camera_matrix': camera_matrix.tolist(), 'dist_coefs': dist_coefs.tolist()}
-    with open(args.out, 'w') as fw:
+    calibration = {'rms': rms, 'camera_matrix': camera_matrix.tolist(), 'dist_coefs': dist_coefs.tolist(),'width':camera.resolution[0],'height':camera.resolution[1]}
+    with open("%dx%d-calibration.yml" % (camera.resolution[0],camera.resolution[1]), 'w') as fw:
         yaml.dump(calibration, fw)
